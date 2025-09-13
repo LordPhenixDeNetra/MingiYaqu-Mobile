@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/notification_provider.dart';
 import '../models/product.dart';
 import '../models/category.dart';
 import '../widgets/product_card.dart';
@@ -25,13 +26,27 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   String? _selectedCategory;
+  bool _showPermissionBanner = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductProvider>().loadProducts();
+      _checkNotificationPermissions();
     });
+  }
+
+  Future<void> _checkNotificationPermissions() async {
+    final notificationProvider = context.read<NotificationProvider>();
+    final hasPermission = await notificationProvider.checkPermissions();
+    final isEnabled = notificationProvider.settings.isEnabled;
+    
+    if (mounted && isEnabled && !hasPermission) {
+      setState(() {
+        _showPermissionBanner = true;
+      });
+    }
   }
 
   @override
@@ -42,6 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
+              if (_showPermissionBanner) _buildPermissionBanner(),
               _buildHeader(),
               _buildStatsCards(),
               _buildCategoryFilter(),
@@ -698,6 +714,126 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
         transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
+  }
+
+  Widget _buildPermissionBanner() {
+    return Container(
+      margin: const EdgeInsets.all(AppStyles.paddingM),
+      padding: const EdgeInsets.all(AppStyles.paddingM),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.errorContainer.withOpacity(0.8),
+            Theme.of(context).colorScheme.errorContainer.withOpacity(0.6),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppStyles.radiusM),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.notifications_off_outlined,
+                color: Theme.of(context).colorScheme.error,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Permissions de notifications requises',
+                  style: AppStyles.titleSmall(context).copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _showPermissionBanner = false;
+                  });
+                },
+                icon: Icon(
+                  Icons.close,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Les notifications sont activées mais l\'autorisation système est manquante. Vous ne recevrez pas d\'alertes d\'expiration.',
+            style: AppStyles.bodySmall(context).copyWith(
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _showPermissionBanner = false;
+                  });
+                },
+                child: Text(
+                  'Ignorer',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error.withOpacity(0.7),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () async {
+                  final notificationProvider = context.read<NotificationProvider>();
+                  final granted = await notificationProvider.requestPermissions();
+                  if (granted) {
+                    setState(() {
+                      _showPermissionBanner = false;
+                    });
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Permissions accordées ! Les notifications sont maintenant actives.'),
+                          backgroundColor: Theme.of(context).colorScheme.secondary,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Permissions refusées. Activez-les manuellement dans les paramètres.'),
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                ),
+                child: const Text('Autoriser'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

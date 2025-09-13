@@ -242,10 +242,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   value: settings.isEnabled,
-                  onChanged: (value) {
-                    notificationProvider.updateSettings(
-                      settings.copyWith(isEnabled: value),
-                    );
+                  onChanged: (value) async {
+                    if (value) {
+                      // Vérifier d'abord les permissions
+                      final hasPermission = await notificationProvider.checkPermissions();
+                      if (!hasPermission) {
+                        // Afficher une boîte de dialogue explicative
+                        final shouldRequest = await _showPermissionDialog();
+                        if (shouldRequest == true) {
+                          final granted = await notificationProvider.requestPermissions();
+                          if (granted) {
+                            notificationProvider.updateSettings(
+                              settings.copyWith(isEnabled: value),
+                            );
+                          } else {
+                            _showPermissionDeniedDialog();
+                          }
+                        }
+                      } else {
+                        notificationProvider.updateSettings(
+                          settings.copyWith(isEnabled: value),
+                        );
+                      }
+                    } else {
+                      notificationProvider.updateSettings(
+                        settings.copyWith(isEnabled: value),
+                      );
+                    }
                   },
                   secondary: Container(
                     padding: const EdgeInsets.all(AppStyles.paddingS),
@@ -446,13 +469,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: Implémenter la fonction de test de notification
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Fonction de test à implémenter'),
-                        ),
-                      );
+                    onTap: () async {
+                      try {
+                        await notificationProvider.showTestNotification();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Notification de test envoyée !'),
+                              backgroundColor: Theme.of(context).colorScheme.secondary,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Erreur lors de l\'envoi de la notification: $e'),
+                              backgroundColor: Theme.of(context).colorScheme.error,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
                     },
                   ),
                 ),
@@ -1016,6 +1055,147 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Supprimer',
               style: TextStyle(color: AppColors.error),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showPermissionDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.notifications_outlined,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            const Text('Autorisation requise'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Pour recevoir des notifications de rappel d\'expiration, l\'application a besoin de votre autorisation.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pourquoi cette autorisation ?',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '• Vous alerter avant l\'expiration de vos produits\n'
+                    '• Éviter le gaspillage alimentaire\n'
+                    '• Vous rappeler de consommer vos aliments à temps',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Plus tard',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            ),
+            child: const Text('Autoriser'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning_outlined,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(width: 8),
+            const Text('Autorisation refusée'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Les notifications ont été refusées. Vous pouvez les activer manuellement dans les paramètres de votre appareil.',
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Comment activer manuellement :',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '1. Allez dans les Paramètres de votre appareil\n'
+                    '2. Recherchez "MingiYaqu" dans les applications\n'
+                    '3. Activez les notifications pour cette app',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Compris'),
           ),
         ],
       ),
