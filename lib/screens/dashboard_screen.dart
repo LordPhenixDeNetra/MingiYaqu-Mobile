@@ -603,6 +603,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            PrimaryButton(
+              text: 'Ajouter un produit',
+              icon: Icons.add,
+              onPressed: () {
+                Navigator.pushNamed(context, '/add-product');
+              },
+            ),
+            const SizedBox(height: AppStyles.paddingXL),
             Icon(
               Icons.inventory_2_outlined,
               size: 80,
@@ -627,13 +635,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppStyles.paddingXL),
-            PrimaryButton(
-              text: 'Ajouter un produit',
-              icon: Icons.add,
-              onPressed: () {
-                Navigator.pushNamed(context, '/add-product');
-              },
-            ),
+            // PrimaryButton(
+            //   text: 'Ajouter un produit',
+            //   icon: Icons.add,
+            //   onPressed: () {
+            //     Navigator.pushNamed(context, '/add-product');
+            //   },
+            // ),
           ],
         ),
       ),

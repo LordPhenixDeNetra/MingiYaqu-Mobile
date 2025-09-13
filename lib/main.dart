@@ -236,7 +236,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
       floatingActionButton: _buildFloatingActionButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -355,7 +355,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     return ScaleTransition(
       scale: _fabScaleAnimation,
       child: Container(
-        margin: const EdgeInsets.only(bottom: AppStyles.paddingL),
+        margin: const EdgeInsets.only(bottom: AppStyles.paddingXL * 0.2),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppStyles.radiusL),
           boxShadow: [
