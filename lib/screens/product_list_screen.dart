@@ -65,12 +65,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddProduct,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: AppColors.onPrimary,
-        child: const Icon(Icons.add),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _navigateToAddProduct,
+      //   backgroundColor: Theme.of(context).colorScheme.primary,
+      //   foregroundColor: AppColors.onPrimary,
+      //   child: const Icon(Icons.add),
+      // ),
     );
   }
 

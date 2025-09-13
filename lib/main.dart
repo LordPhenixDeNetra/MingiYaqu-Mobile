@@ -48,8 +48,8 @@ void main() async {
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: AppColors.primary,
+      systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
   
